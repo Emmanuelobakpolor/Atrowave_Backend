@@ -112,15 +112,13 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 # Default database configuration
+# Alternative using DATABASE_URL
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': env('DB_NAME'),
-        'USER': env('DB_USER'),
-        'PASSWORD': env('DB_PASSWORD'),
-        'HOST': env('DB_HOST'),
-        'PORT': env('DB_PORT'),
-    }
+    'default': dj_database_url.config(
+        default=env('DATABASE_URL'),  # Render provides this
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
 
 # Use DATABASE_URL from Render if available (for production)

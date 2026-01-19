@@ -36,6 +36,7 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:3000',
     'http://10.113.86.184:8000',  # Android emulator
     'http://10.223.80.0:8000',
+    'https://atrowave-backend.onrender.com'
      
 ]
 CORS_ALLOW_ALL_ORIGINS = True

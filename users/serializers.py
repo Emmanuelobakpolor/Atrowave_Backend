@@ -4,6 +4,21 @@ from .models import User
 from merchants.models import MerchantProfile
 
 
+class ProfileSerializer(serializers.ModelSerializer):
+    business_name = serializers.CharField(source='merchant_profile.business_name')
+    kyc_status = serializers.CharField(source='merchant_profile.kyc_status')
+    is_enabled = serializers.BooleanField(source='merchant_profile.is_enabled')
+
+    class Meta:
+        model = User
+        fields = ['id', 'user_email', 'business_name', 'kyc_status', 'is_enabled', 'created_at']
+    
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['user_email'] = instance.email
+        return data
+
+
 class RegisterSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(min_length=6)

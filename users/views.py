@@ -7,7 +7,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
 
-from .serializers import RegisterSerializer, LoginSerializer
+from .serializers import RegisterSerializer, LoginSerializer, ProfileSerializer
 from .models import User, PasswordResetToken
 
 
@@ -149,3 +149,9 @@ class ResetPasswordView(APIView):
             {"message": "Password reset successfully"},
             status=status.HTTP_200_OK
         )
+
+
+class ProfileView(APIView):
+    def get(self, request):
+        serializer = ProfileSerializer(request.user)
+        return Response(serializer.data)

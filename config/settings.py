@@ -116,15 +116,11 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Alternative using DATABASE_URL
 DATABASES = {
     'default': dj_database_url.config(
-        default=env('DATABASE_URL'),  # Render provides this
+        default='sqlite:///db.sqlite3',
         conn_max_age=600,
         conn_health_checks=True,
     )
 }
-
-# Use DATABASE_URL from Render if available (for production)
-if 'DATABASE_URL' in env:
-    DATABASES['default'] = dj_database_url.parse(env('DATABASE_URL'), conn_max_age=600, ssl_require=True)
 
 
 

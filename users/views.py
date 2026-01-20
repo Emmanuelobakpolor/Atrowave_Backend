@@ -23,6 +23,33 @@ class RegisterView(APIView):
         )
 
 
+class RegisterAdminView(APIView):
+    """
+    Endpoint to register an admin user.
+    This should be used cautiously and only in development or with proper security.
+    """
+    def post(self, request):
+        # For security, you might want to add additional checks here
+        # For example, check if there's already an admin user, or require a secret key
+        
+        data = request.data.copy()
+        data["role"] = "ADMIN"
+        
+        serializer = RegisterSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        
+        # Make sure admin user has staff and superuser privileges
+        user.is_staff = True
+        user.is_superuser = True
+        user.save()
+
+        return Response(
+            {"message": "Admin account created successfully"},
+            status=status.HTTP_201_CREATED
+        )
+
+
 class LoginView(APIView):
     def post(self, request):
         serializer = LoginSerializer(data=request.data)

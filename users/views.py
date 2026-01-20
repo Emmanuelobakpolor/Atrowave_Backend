@@ -6,6 +6,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
+from rest_framework.permissions import IsAuthenticated
 
 from .serializers import RegisterSerializer, LoginSerializer, ProfileSerializer
 from .models import User, PasswordResetToken
@@ -153,7 +154,6 @@ class ResetPasswordView(APIView):
 
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
-    
     def post(self, request):
         current_password = request.data.get("current_password")
         new_password = request.data.get("new_password")

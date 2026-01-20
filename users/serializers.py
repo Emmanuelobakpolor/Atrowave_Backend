@@ -5,6 +5,7 @@ from merchants.models import MerchantProfile
 
 
 class ProfileSerializer(serializers.ModelSerializer):
+    user_email = serializers.EmailField(source='email')
     business_name = serializers.CharField(source='merchant_profile.business_name', allow_null=True, required=False)
     kyc_status = serializers.CharField(source='merchant_profile.kyc_status', allow_null=True, required=False)
     is_enabled = serializers.BooleanField(source='merchant_profile.is_enabled', allow_null=True, required=False)
@@ -12,24 +13,6 @@ class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'user_email', 'business_name', 'kyc_status', 'is_enabled', 'date_joined']
-    
-    def to_representation(self, instance):
-        try:
-            data = super().to_representation(instance)
-            data['user_email'] = instance.email
-            return data
-        except Exception as e:
-            import logging
-            logging.error(f"Error in ProfileSerializer: {str(e)}")
-            # If merchant profile doesn't exist (e.g., admin user), return basic user data
-            return {
-                'id': instance.id,
-                'user_email': instance.email,
-                'business_name': None,
-                'kyc_status': None,
-                'is_enabled': None,
-                'date_joined': instance.date_joined
-            }
 
 
 class RegisterSerializer(serializers.Serializer):

@@ -9,6 +9,7 @@ User = settings.AUTH_USER_MODEL
 class MerchantProfile(models.Model):
     KYC_STATUS_CHOICES = (
         ("PENDING", "Pending"),
+        ("UNDER_REVIEW", "Under Review"),
         ("APPROVED", "Approved"),
         ("REJECTED", "Rejected"),
     )

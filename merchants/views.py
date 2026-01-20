@@ -111,6 +111,10 @@ class MerchantKYCSubmitView(APIView):
             document_image=request.data.get('document_image'),
         )
 
+        # Update merchant KYC status to under review
+        merchant.kyc_status = 'UNDER_REVIEW'
+        merchant.save()
+
         return Response({
             "message": "KYC submitted successfully. Awaiting admin review.",
             "kyc_id": kyc.id,

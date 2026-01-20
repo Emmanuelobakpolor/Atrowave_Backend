@@ -143,6 +143,43 @@ class AdminMerchantListView(APIView):
         return Response(data, status=status.HTTP_200_OK)
 
 
+class AdminAllKYCView(APIView):
+    """
+    Admin endpoint to view all KYC submissions from all merchants.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != 'ADMIN':
+            return Response(
+                {"error": "Unauthorized"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        kycs = MerchantKYC.objects.select_related('merchant__user').all()
+        data = []
+        for kyc in kycs:
+            data.append({
+                "id": kyc.id,
+                "merchant_id": kyc.merchant.id,
+                "business_name": kyc.merchant.business_name,
+                "user_email": kyc.merchant.user.email,
+                "kyc_status": kyc.merchant.kyc_status,
+                "business_type": kyc.business_type,
+                "business_address": kyc.business_address,
+                "owner_full_name": kyc.owner_full_name,
+                "owner_date_of_birth": kyc.owner_date_of_birth,
+                "document_type": kyc.document_type,
+                "document_number": kyc.document_number,
+                "document_image": kyc.document_image.url if kyc.document_image else None,
+                "submitted_at": kyc.submitted_at,
+                "reviewed_at": kyc.reviewed_at,
+                "review_notes": kyc.review_notes,
+            })
+
+        return Response(data, status=status.HTTP_200_OK)
+
+
 class AdminMerchantKYCView(APIView):
     permission_classes = [IsAuthenticated]
 

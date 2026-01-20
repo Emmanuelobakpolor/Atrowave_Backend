@@ -2,32 +2,37 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from .models import User
 from merchants.models import MerchantProfile
+from rest_framework import serializers
+from django.contrib.auth import get_user_model
 
+User = get_user_model()
 
 class ProfileSerializer(serializers.ModelSerializer):
-    user_email = serializers.EmailField(source='email')
+    user_email = serializers.EmailField(source='email', read_only=True)
     business_name = serializers.SerializerMethodField()
     kyc_status = serializers.SerializerMethodField()
     is_enabled = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id', 'user_email', 'business_name', 'kyc_status', 'is_enabled', 'date_joined']
-    
+        fields = [
+            'id',
+            'user_email',
+            'business_name',
+            'kyc_status',
+            'is_enabled',
+            'date_joined'
+        ]
+
     def get_business_name(self, obj):
-        if hasattr(obj, 'merchant_profile'):
-            return obj.merchant_profile.business_name
-        return None
-    
+        return getattr(obj.merchant_profile, 'business_name', None)
+
     def get_kyc_status(self, obj):
-        if hasattr(obj, 'merchant_profile'):
-            return obj.merchant_profile.kyc_status
-        return None
-    
+        return getattr(obj.merchant_profile, 'kyc_status', None)
+
     def get_is_enabled(self, obj):
-        if hasattr(obj, 'merchant_profile'):
-            return obj.merchant_profile.is_enabled
-        return None
+        return getattr(obj.merchant_profile, 'is_enabled', None)
+
 
 
 class RegisterSerializer(serializers.Serializer):

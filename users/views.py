@@ -198,4 +198,8 @@ class ProfileView(APIView):
             serializer = ProfileSerializer(request.user)
             return Response(serializer.data)
         except Exception as e:
+            import logging
+            logging.error(f"ProfileView error: {str(e)}")
+            import traceback
+            logging.error(f"Stack trace: {traceback.format_exc()}")
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

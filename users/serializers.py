@@ -11,14 +11,16 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'user_email', 'business_name', 'kyc_status', 'is_enabled', 'created_at']
+        fields = ['id', 'user_email', 'business_name', 'kyc_status', 'is_enabled', 'date_joined']
     
     def to_representation(self, instance):
         try:
             data = super().to_representation(instance)
             data['user_email'] = instance.email
             return data
-        except:
+        except Exception as e:
+            import logging
+            logging.error(f"Error in ProfileSerializer: {str(e)}")
             # If merchant profile doesn't exist (e.g., admin user), return basic user data
             return {
                 'id': instance.id,
@@ -26,7 +28,7 @@ class ProfileSerializer(serializers.ModelSerializer):
                 'business_name': None,
                 'kyc_status': None,
                 'is_enabled': None,
-                'created_at': instance.created_at
+                'date_joined': instance.date_joined
             }
 
 

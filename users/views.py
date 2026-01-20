@@ -152,6 +152,8 @@ class ResetPasswordView(APIView):
 
 
 class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+    
     def post(self, request):
         current_password = request.data.get("current_password")
         new_password = request.data.get("new_password")

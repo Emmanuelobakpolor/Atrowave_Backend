@@ -11,4 +11,5 @@ urlpatterns = [
     path('admin/merchants/', views.AdminMerchantListView.as_view(), name='admin-merchant-list'),
     path('admin/merchants/<int:merchant_id>/kyc/', views.AdminMerchantKYCView.as_view(), name='admin-merchant-kyc'),
     path('admin/kyc/all/', views.AdminAllKYCView.as_view(), name='admin-all-kyc'),
+    path('admin/stats/', views.AdminMerchantStatsView.as_view(), name='admin-merchant-stats'),
 ]

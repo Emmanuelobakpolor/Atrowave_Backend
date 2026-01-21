@@ -147,6 +147,38 @@ class AdminMerchantListView(APIView):
         return Response(data, status=status.HTTP_200_OK)
 
 
+class AdminMerchantStatsView(APIView):
+    """
+    Admin endpoint to get merchant statistics including total merchants and KYC status counts.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != 'ADMIN':
+            return Response(
+                {"error": "Unauthorized"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        total_merchants = MerchantProfile.objects.count()
+        pending_kyc = MerchantProfile.objects.filter(kyc_status='PENDING').count()
+        under_review = MerchantProfile.objects.filter(kyc_status='UNDER_REVIEW').count()
+        approved_kyc = MerchantProfile.objects.filter(kyc_status='APPROVED').count()
+        rejected_kyc = MerchantProfile.objects.filter(kyc_status='REJECTED').count()
+
+        stats = {
+            "total_merchants": total_merchants,
+            "kyc_status": {
+                "pending": pending_kyc,
+                "under_review": under_review,
+                "approved": approved_kyc,
+                "rejected": rejected_kyc
+            }
+        }
+
+        return Response(stats, status=status.HTTP_200_OK)
+
+
 class AdminAllKYCView(APIView):
     """
     Admin endpoint to view all KYC submissions from all merchants.

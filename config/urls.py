@@ -26,6 +26,7 @@ urlpatterns = [
     path("api/", include("users.urls")),
     path("api/merchants/", include("merchants.urls")),
     path("api/admin/", include("merchants.admin_urls")),
+    path("api/", include("wallets.urls")),
     path("api/webhooks/flutterwave/", flutterwave_webhook, name='flutterwave-webhook'),
 ]
 

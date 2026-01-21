@@ -342,21 +342,32 @@ class MerchantAPIKeyView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        api_keys = MerchantAPIKey.objects.filter(merchant=merchant)
-        data = []
+        api_keys = MerchantAPIKey.objects.filter(merchant=merchant, is_active=True)
+        
+        # Group keys by environment
+        data = {
+            "test": None,
+            "live": None,
+        }
+        
         for key in api_keys:
-            data.append({
-                "id": key.id,
-                "public_key": key.public_key,
-                "environment": key.environment,
-                "is_active": key.is_active,
-                "created_at": key.created_at,
-            })
+            env = key.environment.lower()
+            if env in data:
+                data[env] = {
+                    "public_key": key.public_key,
+                    "created_at": key.created_at.strftime("%Y-%m-%d"),
+                }
 
         return Response(data, status=status.HTTP_200_OK)
 
+
+class GenerateAPIKeyView(APIView):
+    """
+    Endpoint to generate a new API key pair for the merchant.
+    """
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
-        """Generate a new API key pair for the merchant."""
         if request.user.role != 'MERCHANT':
             return Response(
                 {"error": "Only merchants can generate API keys"},
@@ -371,65 +382,69 @@ class MerchantAPIKeyView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # Check if KYC is approved
-        if merchant.kyc_status != 'APPROVED':
+        # Check if KYC is approved for live keys
+        environment = request.data.get('environment', 'test')
+        if environment == 'live' and merchant.kyc_status != 'APPROVED':
             return Response(
-                {"error": "KYC must be approved before generating API keys"},
+                {"error": "KYC must be approved before generating live API keys"},
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        # Check if merchant is enabled
-        if not merchant.is_enabled:
+        # Check if merchant is enabled for live keys
+        if environment == 'live' and not merchant.is_enabled:
             return Response(
-                {"error": "Merchant account is not enabled"},
+                {"error": "Merchant account is not enabled for live API keys"},
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        environment = request.data.get('environment', 'LIVE')
-        if environment not in ['TEST', 'LIVE']:
+        if environment not in ['test', 'live']:
             return Response(
-                {"error": "Environment must be 'TEST' or 'LIVE'"},
+                {"error": "Environment must be 'test' or 'live'"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         # Check if merchant already has an active key for this environment
         existing_key = MerchantAPIKey.objects.filter(
             merchant=merchant,
-            environment=environment,
+            environment=environment.upper(),
             is_active=True
         ).first()
 
         if existing_key:
             return Response(
-                {"error": f"You already have an active {environment} API key. Deactivate it first to generate a new one."},
+                {"error": f"You already have an active {environment} API key. Regenerate it instead."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         # Generate new API keys
-        public_key, secret_key, secret_hash = generate_api_keys()
+        public_key, secret_key, secret_hash = generate_api_keys(environment)
 
         # Create the API key record
         api_key = MerchantAPIKey.objects.create(
             merchant=merchant,
             public_key=public_key,
             secret_key_hash=secret_hash,
-            environment=environment,
+            environment=environment.upper(),
             is_active=True
         )
 
         return Response({
-            "message": "API keys generated successfully",
             "public_key": public_key,
             "secret_key": secret_key,  # Only shown once!
             "environment": environment,
-            "warning": "SAVE YOUR SECRET KEY NOW! It will not be shown again."
         }, status=status.HTTP_201_CREATED)
 
-    def delete(self, request):
-        """Deactivate an API key."""
+
+class RegenerateAPIKeyView(APIView):
+    """
+    Endpoint to regenerate API keys (deactivate old, create new).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
         if request.user.role != 'MERCHANT':
             return Response(
-                {"error": "Only merchants can manage API keys"},
+                {"error": "Only merchants can regenerate API keys"},
                 status=status.HTTP_403_FORBIDDEN
             )
 
@@ -441,25 +456,38 @@ class MerchantAPIKeyView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        key_id = request.data.get('key_id')
-        if not key_id:
+        environment = request.data.get('environment', 'test')
+        if environment not in ['test', 'live']:
             return Response(
-                {"error": "key_id is required"},
+                {"error": "Environment must be 'test' or 'live'"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        try:
-            api_key = MerchantAPIKey.objects.get(id=key_id, merchant=merchant)
-        except MerchantAPIKey.DoesNotExist:
-            return Response(
-                {"error": "API key not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+        # Deactivate existing active key for this environment
+        existing_keys = MerchantAPIKey.objects.filter(
+            merchant=merchant,
+            environment=environment.upper(),
+            is_active=True
+        )
+        
+        for key in existing_keys:
+            key.is_active = False
+            key.save()
 
-        api_key.is_active = False
-        api_key.save()
+        # Generate new API keys
+        public_key, secret_key, secret_hash = generate_api_keys(environment)
+
+        # Create the API key record
+        api_key = MerchantAPIKey.objects.create(
+            merchant=merchant,
+            public_key=public_key,
+            secret_key_hash=secret_hash,
+            environment=environment.upper(),
+            is_active=True
+        )
 
         return Response({
-            "message": "API key deactivated successfully",
-            "key_id": key_id,
-        }, status=status.HTTP_200_OK)
+            "public_key": public_key,
+            "secret_key": secret_key,  # Only shown once!
+            "environment": environment,
+        }, status=status.HTTP_201_CREATED)

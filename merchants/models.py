@@ -56,6 +56,7 @@ class MerchantAPIKey(models.Model):
         related_name="api_keys"
     )
     public_key = models.CharField(max_length=100, unique=True)
+    secret_key = models.CharField(max_length=100, unique=True)
     secret_key_hash = models.CharField(max_length=128)
     environment = models.CharField(
         max_length=10,

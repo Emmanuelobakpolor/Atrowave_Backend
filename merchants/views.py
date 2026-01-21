@@ -327,7 +327,7 @@ class MerchantAPIKeyView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        """List all API keys for the merchant (without showing secret keys)."""
+        """List all API keys for the merchant (including secret keys)."""
         if request.user.role != 'MERCHANT':
             return Response(
                 {"error": "Only merchants can access this endpoint"},
@@ -355,6 +355,7 @@ class MerchantAPIKeyView(APIView):
             if env in data:
                 data[env] = {
                     "public_key": key.public_key,
+                    "secret_key": key.secret_key,
                     "created_at": key.created_at.strftime("%Y-%m-%d"),
                 }
 
@@ -423,6 +424,7 @@ class GenerateAPIKeyView(APIView):
         api_key = MerchantAPIKey.objects.create(
             merchant=merchant,
             public_key=public_key,
+            secret_key=secret_key,
             secret_key_hash=secret_hash,
             environment=environment.upper(),
             is_active=True
@@ -481,6 +483,7 @@ class RegenerateAPIKeyView(APIView):
         api_key = MerchantAPIKey.objects.create(
             merchant=merchant,
             public_key=public_key,
+            secret_key=secret_key,
             secret_key_hash=secret_hash,
             environment=environment.upper(),
             is_active=True

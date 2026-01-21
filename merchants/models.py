@@ -28,7 +28,7 @@ class MerchantProfile(models.Model):
     settlement_bank = models.CharField(max_length=255, blank=True, null=True)
     bank_account_number = models.CharField(max_length=20, blank=True, null=True)
     crypto_wallet_address = models.CharField(max_length=255, blank=True, null=True)
-    is_enabled = models.BooleanField(default=False)
+    is_enabled = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

@@ -37,6 +37,11 @@ class MerchantProfile(models.Model):
     def save(self, *args, **kwargs):
         if self.user.role != "MERCHANT":
             raise ValueError("Only users with MERCHANT role can have a merchant profile")
+
+        # Automatically enable merchant when KYC is approved
+        if self.kyc_status == 'APPROVED':
+            self.is_enabled = True
+
         super().save(*args, **kwargs)
 
 

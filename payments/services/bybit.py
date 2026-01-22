@@ -63,12 +63,13 @@ class BybitService:
         
         Args:
             param_str: Pre-built parameter string to include in signature
-        
+            
         Returns:
             dict: Headers for Bybit API request
         """
+        # Use local time directly with proper timestamp format (13 digits)
         timestamp = str(int(time.time() * 1000))
-        recv_window = "5000"
+        recv_window = "30000"  # Increased from 5000ms to 30 seconds to handle time differences
         
         signature = BybitService._generate_signature(timestamp, recv_window, param_str)
 

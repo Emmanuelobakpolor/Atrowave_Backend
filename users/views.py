@@ -9,7 +9,7 @@ from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated
 
 from .serializers import NotificationSerializer, RegisterSerializer, LoginSerializer, ProfileSerializer
-from .models import User, PasswordResetToken
+from .models import User, PasswordResetToken, Notification
 
 
 class RegisterView(APIView):

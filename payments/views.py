@@ -83,6 +83,9 @@ class InitiatePaymentView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        # Store the checkout URL
+        transaction.checkout_url = fw_response["data"]["link"]
+        
         # Credit pending only once
         if not transaction.balance_processed:
             credit_pending(merchant, currency, amount)

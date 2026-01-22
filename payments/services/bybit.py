@@ -92,52 +92,61 @@ class BybitService:
         Returns:
             dict: Bybit API response containing the deposit address
         """
-        base_url = f"{settings.BYBIT_BASE_URL}/v5/asset/deposit/query-address"
+        try:
+            base_url = f"{settings.BYBIT_BASE_URL}/v5/asset/deposit/query-address"
 
-        # Build params dict - only include coin, chainType is optional
-        params = {"coin": coin}
-        
-        # chainType is optional - if provided, add it
-        if chain:
-            params["chainType"] = chain
-        
-        # Build sorted parameter string - this MUST match what's in the URL
-        param_str = BybitService._build_param_string(params)
-        
-        # Build full URL with query string (using our sorted param string)
-        url = f"{base_url}?{param_str}"
-        
-        # Generate headers with the same param string used in URL
-        headers = BybitService._headers(param_str)
-        
-        print("FULL URL:", url)  # 👈 DEBUG
+            # Build params dict - only include coin, chainType is optional
+            params = {"coin": coin}
+            
+            # chainType is optional - if provided, add it
+            if chain:
+                params["chainType"] = chain
+            
+            # Build sorted parameter string - this MUST match what's in the URL
+            param_str = BybitService._build_param_string(params)
+            
+            # Build full URL with query string (using our sorted param string)
+            url = f"{base_url}?{param_str}"
+            
+            # Generate headers with the same param string used in URL
+            headers = BybitService._headers(param_str)
+            
+            print("FULL URL:", url)  # 👈 DEBUG
 
-        # Make request WITHOUT params argument (we already added them to URL)
-        response = requests.get(
-            url,
-            headers=headers,
-            timeout=15,
-        )
+            # Make request WITHOUT params argument (we already added them to URL)
+            response = requests.get(
+                url,
+                headers=headers,
+                timeout=15,
+            )
 
-        result = response.json()
-        print("BYBIT RAW:", result)
-        
-        # The API returns the address directly in result for single chain coins
-        # or in chains array for multi-chain coins
-        # Normalize the response to always have a consistent structure
-        if result.get("retCode") == 0:
-            res = result.get("result", {})
-            # If chains is empty but we have a direct address, create chains array
-            if not res.get("chains") and res.get("address"):
-                result["result"]["chains"] = [{
-                    "chainType": res.get("chainType", chain or ""),
-                    "chain": res.get("chain", chain or ""),
-                    "addressDeposit": res.get("address", ""),
-                    "address": res.get("address", ""),
-                    "tag": res.get("tag", ""),
-                }]
-        
-        return result
+            result = response.json()
+            print("BYBIT RAW:", result)
+            
+            # The API returns the address directly in result for single chain coins
+            # or in chains array for multi-chain coins
+            # Normalize the response to always have a consistent structure
+            if result.get("retCode") == 0:
+                res = result.get("result", {})
+                # If chains is empty but we have a direct address, create chains array
+                if not res.get("chains") and res.get("address"):
+                    result["result"]["chains"] = [{
+                        "chainType": res.get("chainType", chain or ""),
+                        "chain": res.get("chain", chain or ""),
+                        "addressDeposit": res.get("address", ""),
+                        "address": res.get("address", ""),
+                        "tag": res.get("tag", ""),
+                    }]
+            
+            return result
+        except Exception as e:
+            print(f"Bybit API error (get_deposit_address): {e}")
+            # Return a default error response
+            return {
+                "retCode": 1,
+                "retMsg": str(e),
+                "result": {}
+            }
 
     @staticmethod
     def get_coin_info():
@@ -150,21 +159,30 @@ class BybitService:
         Returns:
             dict: Bybit API response containing coin information
         """
-        base_url = f"{settings.BYBIT_BASE_URL}/v5/asset/coin/query-info"
-        
-        # No params needed for this endpoint
-        param_str = ""
-        url = base_url
-        
-        headers = BybitService._headers(param_str)
-        
-        response = requests.get(
-            url,
-            headers=headers,
-            timeout=15,
-        )
+        try:
+            base_url = f"{settings.BYBIT_BASE_URL}/v5/asset/coin/query-info"
+            
+            # No params needed for this endpoint
+            param_str = ""
+            url = base_url
+            
+            headers = BybitService._headers(param_str)
+            
+            response = requests.get(
+                url,
+                headers=headers,
+                timeout=15,
+            )
 
-        return response.json()
+            return response.json()
+        except Exception as e:
+            print(f"Bybit API error (get_coin_info): {e}")
+            # Return a default error response
+            return {
+                "retCode": 1,
+                "retMsg": str(e),
+                "result": {}
+            }
 
     @staticmethod
     def get_deposit_records(coin: str = None, limit: int = 50):

@@ -33,6 +33,7 @@ class Transaction(models.Model):
     payment_type = models.CharField(max_length=10, choices=PAYMENT_TYPE)
     provider = models.CharField(max_length=20, choices=PROVIDER_CHOICES)
     metadata = models.JSONField(blank=True, null=True)
+    checkout_url = models.URLField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     balance_processed = models.BooleanField(default=False)
     deposit_address = models.CharField(max_length=255, blank=True, null=True)

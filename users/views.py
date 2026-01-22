@@ -8,7 +8,7 @@ from django.conf import settings
 from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated
 
-from .serializers import RegisterSerializer, LoginSerializer, ProfileSerializer
+from .serializers import NotificationSerializer, RegisterSerializer, LoginSerializer, ProfileSerializer
 from .models import User, PasswordResetToken
 
 
@@ -194,7 +194,7 @@ from rest_framework.permissions import IsAuthenticated
 
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
-    
+
     def get(self, request):
         try:
             serializer = ProfileSerializer(request.user)
@@ -205,3 +205,56 @@ class ProfileView(APIView):
             import traceback
             logging.error(f"Stack trace: {traceback.format_exc()}")
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class NotificationListView(APIView):
+    """
+    Endpoint to get all notifications for the authenticated user.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        notifications = Notification.objects.filter(user=request.user)
+        serializer = NotificationSerializer(notifications, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class NotificationMarkReadView(APIView):
+    """
+    Endpoint to mark a notification as read.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, notification_id):
+        try:
+            notification = Notification.objects.get(
+                id=notification_id,
+                user=request.user
+            )
+        except Notification.DoesNotExist:
+            return Response(
+                {"error": "Notification not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        notification.is_read = True
+        notification.save()
+
+        return Response(
+            {"message": "Notification marked as read"},
+            status=status.HTTP_200_OK
+        )
+
+
+class NotificationMarkAllReadView(APIView):
+    """
+    Endpoint to mark all notifications as read for the authenticated user.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+        return Response(
+            {"message": "All notifications marked as read"},
+            status=status.HTTP_200_OK
+        )

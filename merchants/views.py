@@ -6,6 +6,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.utils import timezone
 from .models import MerchantProfile, MerchantKYC, MerchantAPIKey
 from .utils import generate_api_keys
+from users.models import Notification
 
 
 class MerchantDashboardView(APIView):
@@ -304,6 +305,14 @@ class AdminMerchantKYCView(APIView):
             merchant.kyc_status = 'APPROVED'
             merchant.is_enabled = True
             message = "Merchant KYC approved and account enabled"
+
+            # Create notification for account approval
+            Notification.objects.create(
+                user=merchant.user,
+                title="Account Approved",
+                message="Congratulations! Your account has been successfully approved. You can now generate live API keys and start accepting payments.",
+                notification_type="ACCOUNT_APPROVED"
+            )
         else:
             merchant.kyc_status = 'REJECTED'
             merchant.is_enabled = False
@@ -428,6 +437,14 @@ class GenerateAPIKeyView(APIView):
             secret_key_hash=secret_hash,
             environment=environment.upper(),
             is_active=True
+        )
+
+        # Create notification for API key generation
+        Notification.objects.create(
+            user=request.user,
+            title=f"{environment.title()} API Key Generated",
+            message=f"Your {environment} API key has been successfully generated. You can now start accepting payments.",
+            notification_type="API_KEY_GENERATED"
         )
 
         return Response({

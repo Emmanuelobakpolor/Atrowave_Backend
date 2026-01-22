@@ -5,6 +5,27 @@ from django.utils import timezone
 from datetime import timedelta
 
 
+class Notification(models.Model):
+    NOTIFICATION_TYPES = (
+        ("ACCOUNT_APPROVED", "Account Approved"),
+        ("API_KEY_GENERATED", "API Key Generated"),
+        ("API_KEY_REGENERATED", "API Key Regenerated"),
+    )
+
+    user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='notifications')
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.email} - {self.title}"
+
+
 class PasswordResetToken(models.Model):
     user = models.ForeignKey('User', on_delete=models.CASCADE)
     token = models.CharField(max_length=100, unique=True)

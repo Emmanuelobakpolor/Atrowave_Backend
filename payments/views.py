@@ -1,12 +1,14 @@
 import uuid
+import hashlib
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.permissions import AllowAny
+from django.conf import settings
 from .models import Transaction
 from .services.flutterwave import FlutterwaveService
-from wallets.services import credit_pending
+from wallets.services import credit_pending, move_pending_to_available
 
 
 class NoAuth(BaseAuthentication):
@@ -56,7 +58,7 @@ class InitiatePaymentView(APIView):
             "tx_ref": reference,
             "amount": str(amount),
             "currency": currency,
-            "redirect_url": "https://your-redirect-url.com",
+            "redirect_url": f"{settings.FRONTEND_BASE_URL}/payment-success?reference={reference}",
             "customer": customer,
             "customizations": {
                 "title": merchant.business_name,
@@ -87,3 +89,80 @@ class InitiatePaymentView(APIView):
             },
             status=status.HTTP_200_OK
         )
+
+
+class FlutterwaveWebhookView(APIView):
+    authentication_classes = [NoAuth]
+    permission_classes = [AllowAny]
+
+    def verify_signature(self, request):
+        signature = request.headers.get('verif-hash')
+        if not signature:
+            return False
+            
+        return signature == settings.FLUTTERWAVE_WEBHOOK_SECRET
+
+    def post(self, request):
+        # Verify webhook signature
+        if not self.verify_signature(request):
+            return Response(
+                {"error": "Invalid signature"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        event = request.data.get('event')
+        data = request.data.get('data')
+
+        if not event or not data:
+            return Response(
+                {"error": "Invalid payload"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # Get transaction reference from payload
+            tx_ref = data.get('tx_ref')
+            if not tx_ref:
+                return Response(
+                    {"error": "Transaction reference not found"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Find the transaction in our database
+            transaction = Transaction.objects.get(reference=tx_ref)
+
+            # Handle payment success event
+            if event == 'charge.completed' and data.get('status') == 'successful':
+                transaction.status = "SUCCESS"
+                transaction.fee = data.get('app_fee', 0)
+                transaction.net_amount = transaction.amount - transaction.fee
+                transaction.metadata = data
+                transaction.save()
+
+                # Move pending balance to available
+                move_pending_to_available(
+                    transaction.merchant,
+                    transaction.currency,
+                    transaction.amount
+                )
+
+            # Handle payment failed event
+            elif event in ['charge.failed', 'charge.refunded']:
+                transaction.status = "FAILED"
+                transaction.metadata = data
+                transaction.save()
+
+                # No need to update balance since we only credited pending
+
+            return Response({"status": "success"}, status=status.HTTP_200_OK)
+
+        except Transaction.DoesNotExist:
+            return Response(
+                {"error": "Transaction not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

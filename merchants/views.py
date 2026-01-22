@@ -488,7 +488,7 @@ class RegenerateAPIKeyView(APIView):
             environment=environment.upper(),
             is_active=True
         )
-        
+
         for key in existing_keys:
             key.is_active = False
             key.save()
@@ -511,3 +511,35 @@ class RegenerateAPIKeyView(APIView):
             "secret_key": secret_key,  # Only shown once!
             "environment": environment,
         }, status=status.HTTP_201_CREATED)
+
+
+class AdminMerchantLiveAPIKeysView(APIView):
+    """
+    Admin endpoint to get all live API keys for all merchants.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != 'ADMIN':
+            return Response(
+                {"error": "Unauthorized"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        live_keys = MerchantAPIKey.objects.filter(
+            environment='LIVE',
+            is_active=True
+        ).select_related('merchant__user')
+
+        data = []
+        for key in live_keys:
+            data.append({
+                "merchant_id": key.merchant.id,
+                "business_name": key.merchant.business_name,
+                "user_email": key.merchant.user.email,
+                "public_key": key.public_key,
+                "created_at": key.created_at,
+                "is_active": key.is_active,
+            })
+
+        return Response(data, status=status.HTTP_200_OK)

@@ -1,5 +1,6 @@
 import uuid
 import hashlib
+import logging
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -9,6 +10,8 @@ from django.conf import settings
 from .models import Transaction
 from .services.flutterwave import FlutterwaveService
 from wallets.services import credit_pending, move_pending_to_available
+
+logger = logging.getLogger(__name__)
 
 
 class NoAuth(BaseAuthentication):
@@ -21,13 +24,18 @@ class InitiatePaymentView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        logger.info(f"InitiatePaymentView POST called. Headers: {dict(request.headers)}")
         merchant = getattr(request, "merchant", None)
+        logger.info(f"Merchant from middleware: {merchant}")
 
         # If merchant not found from secret key, check if user is authenticated
         if not merchant:
+            logger.warning("No merchant found from secret key, checking user auth")
             if request.user and hasattr(request.user, 'merchant_profile') and request.user.role == 'MERCHANT':
                 merchant = request.user.merchant_profile
+                logger.info(f"Using authenticated user merchant: {merchant}")
             else:
+                logger.error("No merchant found, returning 401")
                 return Response(
                     {"error": "Unauthorized"},
                     status=status.HTTP_401_UNAUTHORIZED

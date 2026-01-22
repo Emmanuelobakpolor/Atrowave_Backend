@@ -23,11 +23,15 @@ class InitiatePaymentView(APIView):
     def post(self, request):
         merchant = getattr(request, "merchant", None)
 
+        # If merchant not found from secret key, check if user is authenticated
         if not merchant:
-            return Response(
-                {"error": "Unauthorized"},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
+            if request.user and hasattr(request.user, 'merchant_profile') and request.user.role == 'MERCHANT':
+                merchant = request.user.merchant_profile
+            else:
+                return Response(
+                    {"error": "Unauthorized"},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
 
         amount = request.data.get("amount")
         currency = request.data.get("currency", "NGN")

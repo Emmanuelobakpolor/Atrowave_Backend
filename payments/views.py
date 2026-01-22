@@ -1,6 +1,7 @@
 import uuid
 import hashlib
 import logging
+from httpx import Auth
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -14,13 +15,7 @@ from wallets.services import credit_pending, move_pending_to_available
 logger = logging.getLogger(__name__)
 
 
-class NoAuth(BaseAuthentication):
-    def authenticate(self, request):
-        return None
-
-
 class InitiatePaymentView(APIView):
-    authentication_classes = [NoAuth]
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -104,7 +99,7 @@ class InitiatePaymentView(APIView):
 
 
 class FlutterwaveWebhookView(APIView):
-    authentication_classes = [NoAuth]
+    authentication_classes = [Auth]
     permission_classes = [AllowAny]
 
     def verify_signature(self, request):

@@ -1,7 +1,7 @@
 import uuid
 import hashlib
 import logging
-from httpx import Auth
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -99,7 +99,7 @@ class InitiatePaymentView(APIView):
 
 
 class FlutterwaveWebhookView(APIView):
-    authentication_classes = [Auth]
+   
     permission_classes = [AllowAny]
 
     def verify_signature(self, request):

@@ -180,6 +180,49 @@ class AdminMerchantStatsView(APIView):
         return Response(stats, status=status.HTTP_200_OK)
 
 
+class MerchantUpdateBankDetailsView(APIView):
+    """
+    Endpoint for merchants to update their bank details.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request):
+        if request.user.role != 'MERCHANT':
+            return Response(
+                {"error": "Only merchants can update bank details"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        try:
+            merchant = request.user.merchant_profile
+            
+            settlement_bank = request.data.get('settlement_bank')
+            bank_code = request.data.get('bank_code')
+            bank_account_number = request.data.get('bank_account_number')
+
+            if settlement_bank:
+                merchant.settlement_bank = settlement_bank
+            if bank_code:
+                merchant.bank_code = bank_code
+            if bank_account_number:
+                merchant.bank_account_number = bank_account_number
+
+            merchant.save()
+
+            return Response({
+                "message": "Bank details updated successfully",
+                "settlement_bank": merchant.settlement_bank,
+                "bank_code": merchant.bank_code,
+                "bank_account_number": merchant.bank_account_number
+            }, status=status.HTTP_200_OK)
+
+        except MerchantProfile.DoesNotExist:
+            return Response(
+                {"error": "Merchant profile not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+
 class AdminAllKYCView(APIView):
     """
     Admin endpoint to view all KYC submissions from all merchants.

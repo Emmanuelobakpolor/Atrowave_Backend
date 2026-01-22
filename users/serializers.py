@@ -21,10 +21,14 @@ class ProfileSerializer(serializers.ModelSerializer):
     business_name = serializers.SerializerMethodField()
     kyc_status = serializers.SerializerMethodField()
     is_enabled = serializers.SerializerMethodField()
+    settlement_bank = serializers.SerializerMethodField()
+    bank_code = serializers.SerializerMethodField()
+    bank_account_number = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id', 'user_email', 'business_name', 'kyc_status', 'is_enabled', 'date_joined']
+        fields = ['id', 'user_email', 'business_name', 'kyc_status', 'is_enabled', 
+                 'settlement_bank', 'bank_code', 'bank_account_number', 'date_joined']
     
     def get_business_name(self, obj):
         if hasattr(obj, 'merchant_profile'):
@@ -39,6 +43,21 @@ class ProfileSerializer(serializers.ModelSerializer):
     def get_is_enabled(self, obj):
         if hasattr(obj, 'merchant_profile'):
             return obj.merchant_profile.is_enabled
+        return None
+    
+    def get_settlement_bank(self, obj):
+        if hasattr(obj, 'merchant_profile'):
+            return obj.merchant_profile.settlement_bank
+        return None
+    
+    def get_bank_code(self, obj):
+        if hasattr(obj, 'merchant_profile'):
+            return obj.merchant_profile.bank_code
+        return None
+    
+    def get_bank_account_number(self, obj):
+        if hasattr(obj, 'merchant_profile'):
+            return obj.merchant_profile.bank_account_number
         return None
 
 

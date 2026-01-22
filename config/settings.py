@@ -174,6 +174,7 @@ FLUTTERWAVE_BASE_URL = env("FLUTTERWAVE_BASE_URL")
 FLUTTERWAVE_SECRET_KEY = env("FLUTTERWAVE_SECRET_KEY")
 FLUTTERWAVE_WEBHOOK_SECRET = env("FLUTTERWAVE_WEBHOOK_SECRET")
 FRONTEND_BASE_URL = env("FRONTEND_BASE_URL", default="https://your-frontend-domain.com")
+BASE_URL = env("BASE_URL", default="https://your-domain.com")
 
 # Email configuration
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # For development

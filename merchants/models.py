@@ -26,6 +26,7 @@ class MerchantProfile(models.Model):
         default="PENDING"
     )
     settlement_bank = models.CharField(max_length=255, blank=True, null=True)
+    bank_code = models.CharField(max_length=10, blank=True, null=True)
     bank_account_number = models.CharField(max_length=20, blank=True, null=True)
     crypto_wallet_address = models.CharField(max_length=255, blank=True, null=True)
     is_enabled = models.BooleanField(default=True)

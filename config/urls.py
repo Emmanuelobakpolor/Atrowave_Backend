@@ -18,7 +18,6 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from webhooks.views import flutterwave_webhook
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -27,7 +26,8 @@ urlpatterns = [
     path("api/merchants/", include("merchants.urls")),
     path("api/admin/", include("merchants.admin_urls")),
     path("api/", include("wallets.urls")),
-    path("api/webhooks/flutterwave/", flutterwave_webhook, name='flutterwave-webhook'),
+    path("api/payouts/", include("payouts.urls")),
+    path("", include("webhooks.urls")),
 ]
 
 # Serve media files in development

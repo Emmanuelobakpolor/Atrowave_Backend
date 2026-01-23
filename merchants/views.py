@@ -6,6 +6,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.utils import timezone
 from .models import MerchantProfile, MerchantKYC, MerchantAPIKey
 from .utils import generate_api_keys
+from payments.models import Transaction
 from users.models import Notification
 
 
@@ -554,6 +555,46 @@ class RegenerateAPIKeyView(APIView):
             "secret_key": secret_key,  # Only shown once!
             "environment": environment,
         }, status=status.HTTP_201_CREATED)
+
+
+class AdminAllTransactionsView(APIView):
+    """
+    Admin endpoint to view all transactions from all merchants.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != 'ADMIN':
+            return Response(
+                {"error": "Unauthorized"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        transactions = Transaction.objects.select_related('merchant__user').all().order_by('-created_at')
+        data = []
+        for transaction in transactions:
+            data.append({
+                "id": transaction.id,
+                "merchant_id": transaction.merchant.id,
+                "business_name": transaction.merchant.business_name,
+                "user_email": transaction.merchant.user.email,
+                "reference": transaction.reference,
+                "amount": str(transaction.amount),
+                "fee": str(transaction.fee),
+                "net_amount": str(transaction.net_amount),
+                "currency": transaction.currency,
+                "status": transaction.status,
+                "payment_type": transaction.payment_type,
+                "provider": transaction.provider,
+                "checkout_url": transaction.checkout_url,
+                "created_at": transaction.created_at,
+                "balance_processed": transaction.balance_processed,
+                "deposit_address": transaction.deposit_address,
+                "network": transaction.network,
+                "tx_hash": transaction.tx_hash,
+            })
+
+        return Response(data, status=status.HTTP_200_OK)
 
 
 class AdminMerchantLiveAPIKeysView(APIView):

@@ -11,6 +11,10 @@ from django.db import transaction
 from django.conf import settings
 import random
 import string
+import logging
+
+# Set up logger
+logger = logging.getLogger(__name__)
 
 def generate_payout_reference():
     prefix = "PO"
@@ -22,7 +26,10 @@ class FiatPayoutView(APIView):
 
     @transaction.atomic
     def post(self, request):
+        logger.info(f"Fiat payout request received from user {request.user.id}, data: {request.data}")
+        
         if request.user.role != 'MERCHANT':
+            logger.warning(f"Non-merchant user {request.user.id} attempted to access fiat payout endpoint")
             return Response(
                 {"error": "Only merchants can access this endpoint"},
                 status=status.HTTP_403_FORBIDDEN
@@ -30,19 +37,23 @@ class FiatPayoutView(APIView):
 
         serializer = PayoutRequestSerializer(data=request.data)
         if not serializer.is_valid():
+            logger.error(f"Validation errors for user {request.user.id}: {serializer.errors}")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             merchant = request.user.merchant_profile
+            logger.info(f"Processing payout for merchant {merchant.id}, business name: {merchant.business_name}")
             
             # Validate merchant status
             if merchant.kyc_status != 'APPROVED':
+                logger.warning(f"Merchant {merchant.id} with KYC status {merchant.kyc_status} attempted payout")
                 return Response(
                     {"error": "Merchant must have KYC approved to request payouts"},
                     status=status.HTTP_403_FORBIDDEN
                 )
             
             if not merchant.is_enabled:
+                logger.warning(f"Disabled merchant {merchant.id} attempted payout")
                 return Response(
                     {"error": "Merchant account is disabled"},
                     status=status.HTTP_403_FORBIDDEN
@@ -50,15 +61,20 @@ class FiatPayoutView(APIView):
             
             # Validate balance
             amount = serializer.validated_data['amount']
+            logger.info(f"Payout amount requested: {amount} NGN")
+            
             try:
                 wallet = Wallet.objects.get(merchant=merchant, currency='NGN')
+                logger.info(f"Wallet found: {wallet.id}, available balance: {wallet.available_balance} NGN")
             except Wallet.DoesNotExist:
+                logger.error(f"NGN wallet not found for merchant {merchant.id}")
                 return Response(
                     {"error": "NGN wallet not found"},
                     status=status.HTTP_404_NOT_FOUND
                 )
             
             if wallet.available_balance < amount:
+                logger.error(f"Insufficient balance for merchant {merchant.id}: available {wallet.available_balance}, requested {amount}")
                 return Response(
                     {"error": "Insufficient available balance"},
                     status=status.HTTP_400_BAD_REQUEST
@@ -96,12 +112,14 @@ class FiatPayoutView(APIView):
             flutterwave_response = FlutterwaveService.initiate_transfer(flutterwave_payload)
             
             # Return response immediately without waiting for transfer completion
+            logger.info(f"Payout request successful for user {request.user.id}, reference: {payout.reference}")
             return Response(
                 {"message": "Payout request submitted", "reference": payout.reference},
                 status=status.HTTP_201_CREATED
             )
             
         except Exception as e:
+            logger.error(f"Unexpected error processing payout for user {request.user.id}: {str(e)}", exc_info=True)
             return Response(
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR

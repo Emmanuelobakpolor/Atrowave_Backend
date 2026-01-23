@@ -1,5 +1,9 @@
 import requests
 from django.conf import settings
+import logging
+
+# Set up logger
+logger = logging.getLogger(__name__)
 
 class FlutterwaveService:
 
@@ -22,7 +26,10 @@ class FlutterwaveService:
             "Content-Type": "application/json"
         }
 
+        logger.info(f"Calling Flutterwave transfer API with payload: {payload}")
         response = requests.post(url, json=payload, headers=headers)
+        logger.info(f"Flutterwave transfer API response: {response.json()}")
+        
         return response.json()
 
     @staticmethod

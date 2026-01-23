@@ -84,8 +84,6 @@ class InitiatePaymentView(APIView):
             }
         }
 
-        # Get environment from request (attached by middleware)
-        environment = getattr(request, "api_key_environment", "TEST")
         logger.info(f"Processing payment in {environment} mode")
         
         fw_response = FlutterwaveService.initialize_payment(flutterwave_payload, environment)

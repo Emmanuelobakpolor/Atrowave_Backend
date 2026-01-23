@@ -19,6 +19,11 @@ class Transaction(models.Model):
         ("BYBIT", "Bybit"),
     )
 
+    ENVIRONMENT_CHOICES = (
+        ("TEST", "Test"),
+        ("LIVE", "Live"),
+    )
+
     merchant = models.ForeignKey(
         MerchantProfile,
         on_delete=models.CASCADE,
@@ -32,6 +37,11 @@ class Transaction(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES)
     payment_type = models.CharField(max_length=10, choices=PAYMENT_TYPE)
     provider = models.CharField(max_length=20, choices=PROVIDER_CHOICES)
+    environment = models.CharField(
+        max_length=10,
+        choices=ENVIRONMENT_CHOICES,
+        default="TEST"
+    )
     metadata = models.JSONField(blank=True, null=True)
     checkout_url = models.URLField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)

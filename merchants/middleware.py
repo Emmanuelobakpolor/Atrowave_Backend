@@ -23,8 +23,9 @@ class MerchantAPIKeyMiddleware:
                     merchant__is_enabled=True,
                     merchant__kyc_status="APPROVED"
                 )
-                logger.debug(f"API key valid for merchant: {api_key.merchant.business_name} (ID: {api_key.merchant.id})")
+                logger.debug(f"API key valid for merchant: {api_key.merchant.business_name} (ID: {api_key.merchant.id}), Environment: {api_key.environment}")
                 request.merchant = api_key.merchant
+                request.api_key_environment = api_key.environment  # Attach environment to request
             except MerchantAPIKey.DoesNotExist:
                 logger.error(f"API key not found or invalid. Raw key prefix: {raw_key[:10]}...")
                 # Debug: Log all active API keys with their merchants for comparison
@@ -35,7 +36,7 @@ class MerchantAPIKeyMiddleware:
                 )
                 logger.debug(f"Active valid API keys count: {active_keys.count()}")
                 for key in active_keys:
-                    logger.debug(f"Stored key: {key.secret_key[:10]}..., Merchant: {key.merchant.business_name}, Status: {key.merchant.kyc_status}")
+                    logger.debug(f"Stored key: {key.secret_key[:10]}..., Merchant: {key.merchant.business_name}, Status: {key.merchant.kyc_status}, Env: {key.environment}")
                 return JsonResponse({"error": "Invalid API key"}, status=401)
         else:
             logger.debug("Authorization header missing or invalid format (expected Bearer sk_)")

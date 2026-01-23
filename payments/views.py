@@ -8,6 +8,8 @@ from rest_framework import status
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.permissions import AllowAny
 from django.conf import settings
+
+from merchants.models import MerchantAPIKey
 from .models import Transaction
 from .services.flutterwave import FlutterwaveService
 from wallets.services import credit_pending, move_pending_to_available
@@ -48,6 +50,9 @@ class InitiatePaymentView(APIView):
 
         reference = f"TX-{uuid.uuid4().hex}"
 
+        # Get environment from request (attached by middleware)
+        environment = getattr(request, "api_key_environment", "TEST")
+        
         # Create pending transaction
         transaction = Transaction.objects.create(
             merchant=merchant,
@@ -58,7 +63,8 @@ class InitiatePaymentView(APIView):
             currency=currency,
             status="PENDING",
             payment_type="FIAT",
-            provider="FLUTTERWAVE"
+            provider="FLUTTERWAVE",
+            environment=environment
         )
 
         flutterwave_payload = {
@@ -73,7 +79,11 @@ class InitiatePaymentView(APIView):
             }
         }
 
-        fw_response = FlutterwaveService.initialize_payment(flutterwave_payload)
+        # Get environment from request (attached by middleware)
+        environment = getattr(request, "api_key_environment", "TEST")
+        logger.info(f"Processing payment in {environment} mode")
+        
+        fw_response = FlutterwaveService.initialize_payment(flutterwave_payload, environment)
 
         if fw_response.get("status") != "success":
             transaction.status = "FAILED"
@@ -102,19 +112,33 @@ class InitiatePaymentView(APIView):
 
 
 class FlutterwaveWebhookView(APIView):
-   
+    
     permission_classes = [AllowAny]
 
-    def verify_signature(self, request):
+    def verify_signature(self, request, environment="TEST"):
         signature = request.headers.get('verif-hash')
         if not signature:
             return False
             
-        return signature == settings.FLUTTERWAVE_WEBHOOK_SECRET
+        return FlutterwaveService.verify_webhook_signature(signature, environment)
 
     def post(self, request):
+        # Get transaction reference from payload to determine environment
+        data = request.data.get('data')
+        tx_ref = data.get('tx_ref') if data else None
+        
+        environment = "TEST"  # Default to TEST
+        if tx_ref:
+            try:
+                transaction = Transaction.objects.get(reference=tx_ref)
+                environment = transaction.environment
+                logger.info(f"Transaction {tx_ref} processed in {environment} mode")
+            except Transaction.DoesNotExist:
+                logger.warning(f"Transaction {tx_ref} not found, defaulting to TEST environment")
+
         # Verify webhook signature
-        if not self.verify_signature(request):
+        if not self.verify_signature(request, environment):
+            logger.error(f"Invalid signature for transaction {tx_ref} in {environment} mode")
             return Response(
                 {"error": "Invalid signature"},
                 status=status.HTTP_401_UNAUTHORIZED

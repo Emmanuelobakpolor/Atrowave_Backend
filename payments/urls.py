@@ -5,11 +5,12 @@ from payments.views_crypto import (
     AvailableAssetsView,
     DepositAddressView,
 )
-from .views import InitiatePaymentView, FlutterwaveWebhookView
+from .views import InitiatePaymentView, FlutterwaveWebhookView, ConfirmPaymentView
 
 urlpatterns = [
     path("payments/initiate", InitiatePaymentView.as_view()),
     path("payments/flutterwave/webhook", FlutterwaveWebhookView.as_view()),
+    path("payments/confirm", ConfirmPaymentView.as_view()),
     path("payments/crypto/initiate", InitiateCryptoPaymentView.as_view()),
     path("payments/crypto/assets", AvailableAssetsView.as_view()),
     path("payments/crypto/address", DepositAddressView.as_view()),

@@ -110,6 +110,56 @@ class InitiatePaymentView(APIView):
         )
 
 
+class ConfirmPaymentView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        reference = request.data.get("reference")
+        transaction_id = request.data.get("transaction_id")
+        status = request.data.get("status")
+
+        if not reference:
+            return Response(
+                {"error": "Reference is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            transaction = Transaction.objects.get(reference=reference)
+
+            if status == "completed" or status == "successful":
+                transaction.status = "SUCCESS"
+                transaction.transaction_id = transaction_id
+                transaction.balance_processed = True
+                transaction.save()
+
+                # Credit merchant wallet
+                from wallets.services import credit_pending, move_pending_to_available
+                credit_pending(transaction.merchant, transaction.currency, transaction.amount)
+                move_pending_to_available(transaction.merchant, transaction.currency, transaction.amount)
+
+            return Response(
+                {"status": "success", "transaction": {
+                    "reference": transaction.reference,
+                    "status": transaction.status,
+                    "transaction_id": transaction.transaction_id
+                }},
+                status=status.HTTP_200_OK
+            )
+
+        except Transaction.DoesNotExist:
+            return Response(
+                {"error": "Transaction not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Error confirming payment: {str(e)}")
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
 class FlutterwaveWebhookView(APIView):
     
     permission_classes = [AllowAny]

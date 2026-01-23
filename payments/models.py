@@ -49,6 +49,7 @@ class Transaction(models.Model):
     deposit_address = models.CharField(max_length=255, blank=True, null=True)
     network = models.CharField(max_length=50, blank=True, null=True)
     tx_hash = models.CharField(max_length=255, blank=True, null=True)
+    transaction_id = models.CharField(max_length=100, blank=True, null=True)
 
 
     def __str__(self):

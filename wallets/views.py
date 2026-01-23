@@ -65,7 +65,9 @@ class TransactionsView(APIView):
                     "currency": tx.currency,
                     "status": tx.status,
                     "payment_type": tx.payment_type,
-                    "created_at": tx.created_at.isoformat()
+                    "created_at": tx.created_at.isoformat(),
+                    "provider": tx.provider,
+                    "environment": tx.environment
                 })
             
             return Response(transaction_data, status=status.HTTP_200_OK)

@@ -9,4 +9,5 @@ urlpatterns = [
     path('api-keys/generate/', views.GenerateAPIKeyView.as_view(), name='generate-api-keys'),
     path('api-keys/regenerate/', views.RegenerateAPIKeyView.as_view(), name='regenerate-api-keys'),
     path('bank-details/', views.MerchantUpdateBankDetailsView.as_view(), name='update-bank-details'),
+    path('transactions/', views.MerchantTransactionsView.as_view(), name='merchant-transactions'),
 ]

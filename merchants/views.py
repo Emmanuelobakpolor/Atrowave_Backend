@@ -627,3 +627,48 @@ class AdminMerchantLiveAPIKeysView(APIView):
             })
 
         return Response(data, status=status.HTTP_200_OK)
+
+
+class MerchantTransactionsView(APIView):
+    """
+    Endpoint for merchants to view their transactions.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != 'MERCHANT':
+            return Response(
+                {"error": "Only merchants can access this endpoint"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        try:
+            merchant = request.user.merchant_profile
+        except MerchantProfile.DoesNotExist:
+            return Response(
+                {"error": "Merchant profile not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        transactions = Transaction.objects.filter(
+            merchant=merchant
+        ).order_by('-created_at')
+
+        data = []
+        for transaction in transactions:
+            data.append({
+                "id": transaction.id,
+                "reference": transaction.reference,
+                "amount": str(transaction.amount),
+                "fee": str(transaction.fee),
+                "net_amount": str(transaction.net_amount),
+                "currency": transaction.currency,
+                "status": transaction.status,
+                "payment_type": transaction.payment_type,
+                "provider": transaction.provider,
+                "environment": transaction.environment,
+                "created_at": transaction.created_at,
+                "balance_processed": transaction.balance_processed,
+            })
+
+        return Response(data, status=status.HTTP_200_OK)

@@ -127,6 +127,17 @@ class ConfirmPaymentView(APIView):
         try:
             transaction = Transaction.objects.get(reference=reference)
 
+            # 🔐 IDMPOTENCY CHECK - Prevent double processing
+            if transaction.status == "SUCCESS" or transaction.balance_processed:
+                return Response(
+                    {"status": "already_processed", "transaction": {
+                        "reference": transaction.reference,
+                        "status": transaction.status,
+                        "transaction_id": transaction.transaction_id
+                    }},
+                    status=status.HTTP_200_OK
+                )
+
             if status == "completed" or status == "successful":
                 transaction.status = "SUCCESS"
                 transaction.transaction_id = transaction_id

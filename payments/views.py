@@ -51,7 +51,12 @@ class InitiatePaymentView(APIView):
         reference = f"TX-{uuid.uuid4().hex}"
 
         # Get environment from request (attached by middleware)
-        environment = getattr(request, "api_key_environment", "TEST")
+        environment = getattr(request, "api_key_environment", None)
+        
+        # If no environment from API key, allow user to specify environment or use default
+        if not environment:
+            environment = request.data.get("environment", "TEST").upper()
+            logger.info(f"Using environment from request body: {environment}")
         
         # Create pending transaction
         transaction = Transaction.objects.create(

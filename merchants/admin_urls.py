@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from payouts.views import AdminAllPayoutsView
 
 urlpatterns = [
     # Admin endpoints
@@ -9,4 +10,5 @@ urlpatterns = [
     path('stats/', views.AdminMerchantStatsView.as_view(), name='admin-merchant-stats'),
     path('live-api-keys/', views.AdminMerchantLiveAPIKeysView.as_view(), name='admin-live-api-keys'),
     path('transactions/all/', views.AdminAllTransactionsView.as_view(), name='admin-all-transactions'),
+    path('payouts/all/', AdminAllPayoutsView.as_view(), name='admin-all-payouts'),
 ]

@@ -177,3 +177,39 @@ class PayoutHistoryView(APIView):
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class AdminAllPayoutsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != 'ADMIN':
+            return Response(
+                {"error": "Unauthorized"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        try:
+            payouts = Payout.objects.select_related('merchant__user').order_by('-created_at')
+            data = []
+            for payout in payouts:
+                data.append({
+                    "id": payout.id,
+                    "merchant_id": payout.merchant.id,
+                    "business_name": payout.merchant.business_name,
+                    "user_email": payout.merchant.user.email,
+                    "amount": payout.amount,
+                    "currency": payout.currency,
+                    "status": payout.status,
+                    "reference": payout.reference,
+                    "bank_details": payout.bank_details,
+                    "created_at": payout.created_at,
+                    "processed_at": payout.processed_at
+                })
+            return Response(data, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Error fetching all payouts: {str(e)}", exc_info=True)
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

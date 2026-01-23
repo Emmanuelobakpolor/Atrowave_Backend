@@ -95,20 +95,13 @@ def flutterwave_webhook(request):
 
             if status == "successful":
                 txn.status = "SUCCESS"
-                move_pending_to_available(
-                    txn.merchant,
-                    currency,
-                    amount
-                )
+                # Credit merchant wallet directly with available balance
+                from wallets.services import move_pending_to_available, credit_pending
+                credit_pending(txn.merchant, currency, amount)
+                move_pending_to_available(txn.merchant, currency, amount)
             else:
                 txn.status = "FAILED"
-                # Reverse pending balance
-                wallet = Wallet.objects.select_for_update().get(
-                    merchant=txn.merchant,
-                    currency=currency
-                )
-                wallet.pending_balance -= amount
-                wallet.save()
+                # No pending balance to reverse since we didn't credit at initialization
 
             txn.balance_processed = True
             txn.save()

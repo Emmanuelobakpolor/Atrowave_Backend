@@ -99,11 +99,7 @@ class InitiatePaymentView(APIView):
         # Store the checkout URL
         transaction.checkout_url = fw_response["data"]["link"]
         
-        # Credit pending only once
-        if not transaction.balance_processed:
-            credit_pending(merchant, currency, amount)
-            transaction.balance_processed = True
-            transaction.save()
+        # Do NOT credit pending balance at initialization - wait for successful payment
 
         return Response(
             {
@@ -176,7 +172,11 @@ class FlutterwaveWebhookView(APIView):
                 transaction.metadata = data
                 transaction.save()
 
-                # Move pending balance to available
+                # Credit merchant wallet directly with available balance (not pending)
+                from wallets.services import move_pending_to_available, credit_pending
+                # First, ensure we have the wallet
+                credit_pending(transaction.merchant, transaction.currency, transaction.amount)
+                # Then move from pending to available (so it's immediately available)
                 move_pending_to_available(
                     transaction.merchant,
                     transaction.currency,
